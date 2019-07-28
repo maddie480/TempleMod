@@ -92,15 +92,15 @@ namespace Celeste.Mod.TempleMod {
                     i => i.OpCode == OpCodes.Call && ((MethodReference)i.Operand).Name.Contains("get_Scene"),
                     i => i.OpCode == OpCodes.Callvirt && ((MethodReference)i.Operand).Name.Contains("get_Tracker"),
                     i => i.OpCode == OpCodes.Callvirt,
-                    i => i.OpCode == OpCodes.Stloc_0)) {
+                    // this is stloc.0 on the XNA branch and stloc.1 on the FNA branch
+                    i => (i.OpCode == OpCodes.Stloc_0 || i.OpCode == OpCodes.Stloc_1))) {
 
                     Logger.Log("TempleModModule", $"Patching TempleEye at CIL index {cursor.Index} to be able to mod target");
 
-                    // pop Theo and put a call to our method instead
-                    cursor.RemoveRange(5);
-                    cursor.Emit(OpCodes.Ldarg_0);
+                    // replace "this.Scene.Tracker.GetEntity<TheoCrystal>" with "ReturnTrackedActor(this)"
+                    cursor.Index++;
+                    cursor.RemoveRange(3);
                     cursor.EmitDelegate<Func<TempleEye, Actor>>(ReturnTrackedActor);
-                    cursor.Emit(OpCodes.Stloc_0);
                 }
             });
         }

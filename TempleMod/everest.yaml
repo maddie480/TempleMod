@@ -1,5 +1,5 @@
 ﻿- Name: TempleMod
-  Version: 0.0.1
+  Version: 0.0.2
   DLL: TempleMod.dll
   Dependencies:
     - Name: Everest
