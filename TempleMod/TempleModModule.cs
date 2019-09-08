@@ -1,10 +1,8 @@
 ﻿using System;
 using MonoMod.Cil;
-using System.Collections.Generic;
 using Mono.Cecil.Cil;
 using Mono.Cecil;
 using Microsoft.Xna.Framework;
-using On.Celeste;
 using Monocle;
 
 namespace Celeste.Mod.TempleMod {
@@ -34,31 +32,6 @@ namespace Celeste.Mod.TempleMod {
             // unmod methods here
             On.Celeste.TempleEye.ctor -= ModTempleEyeConstructor;
             IL.Celeste.TempleEye.Update -= ModTempleEyeUpdate;
-
-            moddedMethods.Clear();
-        }
-
-        // ================ Utility methods for IL modding ================
-
-        /// <summary>
-        /// Keeps track of already patched methods.
-        /// </summary>
-        private static HashSet<string> moddedMethods = new HashSet<string>();
-
-        /// <summary>
-        /// Utility method to prevent methods from getting patched multiple times.
-        /// </summary>
-        /// <param name="methodName">Name of the patched method</param>
-        /// <param name="patcher">Action to run in order to patch method</param>
-        private static void ModMethod(string methodName, Action patcher) {
-            // for whatever reason mod methods are called multiple times: only patch the methods once
-            if (moddedMethods.Contains(methodName)) {
-                Logger.Log("TempleModModule", $"> Method {methodName} already patched");
-            } else {
-                Logger.Log("TempleModModule", $"> Patching method {methodName}");
-                patcher.Invoke();
-                moddedMethods.Add(methodName);
-            }
         }
 
         // ================ Temple eye handling ================
@@ -84,25 +57,23 @@ namespace Celeste.Mod.TempleMod {
         /// </summary>
         /// <param name="il">Object allowing IL patching</param>
         private void ModTempleEyeUpdate(ILContext il) {
-            ModMethod("TempleEyeUpdate", () => {
-                ILCursor cursor = new ILCursor(il);
+            ILCursor cursor = new ILCursor(il);
 
-                if (cursor.TryGotoNext(MoveType.Before,
-                    i => i.OpCode == OpCodes.Ldarg_0,
-                    i => i.OpCode == OpCodes.Call && ((MethodReference)i.Operand).Name.Contains("get_Scene"),
-                    i => i.OpCode == OpCodes.Callvirt && ((MethodReference)i.Operand).Name.Contains("get_Tracker"),
-                    i => i.OpCode == OpCodes.Callvirt,
-                    // this is stloc.0 on the XNA branch and stloc.1 on the FNA branch
-                    i => (i.OpCode == OpCodes.Stloc_0 || i.OpCode == OpCodes.Stloc_1))) {
+            if (cursor.TryGotoNext(MoveType.Before,
+                i => i.OpCode == OpCodes.Ldarg_0,
+                i => i.OpCode == OpCodes.Call && ((MethodReference)i.Operand).Name.Contains("get_Scene"),
+                i => i.OpCode == OpCodes.Callvirt && ((MethodReference)i.Operand).Name.Contains("get_Tracker"),
+                i => i.OpCode == OpCodes.Callvirt,
+                // this is stloc.0 on the XNA branch and stloc.1 on the FNA branch
+                i => (i.OpCode == OpCodes.Stloc_0 || i.OpCode == OpCodes.Stloc_1))) {
 
-                    Logger.Log("TempleModModule", $"Patching TempleEye at CIL index {cursor.Index} to be able to mod target");
+                Logger.Log("TempleModModule", $"Patching TempleEye at CIL index {cursor.Index} to be able to mod target");
 
-                    // replace "this.Scene.Tracker.GetEntity<TheoCrystal>" with "ReturnTrackedActor(this)"
-                    cursor.Index++;
-                    cursor.RemoveRange(3);
-                    cursor.EmitDelegate<Func<TempleEye, Actor>>(ReturnTrackedActor);
-                }
-            });
+                // replace "this.Scene.Tracker.GetEntity<TheoCrystal>" with "ReturnTrackedActor(this)"
+                cursor.Index++;
+                cursor.RemoveRange(3);
+                cursor.EmitDelegate<Func<TempleEye, Actor>>(ReturnTrackedActor);
+            }
         }
 
         /// <summary>
