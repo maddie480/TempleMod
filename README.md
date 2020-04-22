@@ -4,4 +4,4 @@ A tiny code mod someone asked for on Discord. This adds an option to Temple Eyes
 
 _That's literally it._
 
-Available on GameBanana [here](https://gamebanana.com/gamefiles/9528) if you want it for some reason.
+**This mod is obsolete and got merged into [max480's Helping Hand](https://github.com/max4805/MaxHelpingHand).** 
